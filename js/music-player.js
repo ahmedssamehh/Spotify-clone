@@ -21,11 +21,62 @@ class MusicPlayerService {
         this.audioElement.addEventListener('timeupdate', () => this.handleTimeUpdate());
         this.audioElement.addEventListener('volumechange', () => this.handleVolumeChange());
         
+        // Add error handling for audio element
+        this.audioElement.addEventListener('error', (e) => {
+            console.error('Audio element error:', e);
+            this.handleAudioError(e);
+        });
+        
         // Initialize with sample tracks for fallback
         this.loadSampleTracks();
         
         // Initialize Spotify integration
         this.initSpotify();
+    }
+    
+    // Handle audio errors
+    handleAudioError(error) {
+        console.error('Audio error:', error);
+        const track = this.playlist[this.currentTrackIndex];
+        
+        // Check if the current track has a fallback URL
+        if (track && !track.fallbackUrl) {
+            // Add fallback URLs to publicly available audio files
+            track.fallbackUrl = this.getFallbackAudioUrl(this.currentTrackIndex);
+            console.log('Using fallback URL:', track.fallbackUrl);
+            
+            // Use the fallback URL
+            this.audioElement.src = track.fallbackUrl;
+            this.audioElement.load();
+            
+            // Attempt to play again if it was playing
+            if (this.isPlaying) {
+                this.audioElement.play().catch(err => {
+                    console.error('Failed to play fallback audio:', err);
+                });
+            }
+        }
+        
+        // Trigger error event for UI updates
+        this.trigger('onError', {
+            track: track,
+            error: error
+        });
+    }
+    
+    // Get a fallback audio URL
+    getFallbackAudioUrl(index) {
+        // Array of public domain audio URLs that can be used as fallbacks
+        const fallbackUrls = [
+            'https://samplelib.com/lib/preview/mp3/sample-3s.mp3',
+            'https://samplelib.com/lib/preview/mp3/sample-6s.mp3',
+            'https://samplelib.com/lib/preview/mp3/sample-9s.mp3',
+            'https://samplelib.com/lib/preview/mp3/sample-12s.mp3',
+            'https://samplelib.com/lib/preview/mp3/sample-15s.mp3'
+        ];
+        
+        // Return a URL based on the index, cycling through if needed
+        return fallbackUrls[index % fallbackUrls.length];
     }
     
     // Initialize Spotify integration
@@ -53,21 +104,21 @@ class MusicPlayerService {
     
     // Initialize Spotify Web Playback SDK
     initSpotifyPlaybackSDK() {
-        // This requires the Spotify Web Playback SDK script to be loaded
-        // <script src="https://sdk.scdn.co/spotify-player.js"></script>
-        
-        if (!window.Spotify) {
-            console.warn('Spotify Web Playback SDK not available');
-            return;
-        }
-        
+        // Wait for Spotify SDK to be available
         window.onSpotifyWebPlaybackSDKReady = () => {
+            const token = window.spotifyAPI?.getToken();
+            
+            if (!token) {
+                console.warn('No Spotify token available. User needs to log in first.');
+                return;
+            }
+            
             this.spotifyPlayer = new Spotify.Player({
                 name: 'Spotify Clone Player',
                 getOAuthToken: cb => {
-                    // Get the token from the SpotifyAPI instance
-                    const token = window.spotifyAPI.getToken();
-                    cb(token);
+                    // Get the current token
+                    const currentToken = window.spotifyAPI.getToken();
+                    cb(currentToken);
                 },
                 volume: this.volume
             });
@@ -80,11 +131,12 @@ class MusicPlayerService {
             this.spotifyPlayer.addListener('authentication_error', ({ message }) => {
                 console.error('Spotify Player authentication error:', message);
                 // Try to refresh token or prompt for login
-                window.spotifyAPI.logout();
+                this.showAuthError('Authentication error: ' + message);
             });
             
             this.spotifyPlayer.addListener('account_error', ({ message }) => {
                 console.error('Spotify Player account error:', message);
+                this.showAuthError('Account error: ' + message);
             });
             
             this.spotifyPlayer.addListener('playback_error', ({ message }) => {
@@ -95,7 +147,7 @@ class MusicPlayerService {
             this.spotifyPlayer.addListener('player_state_changed', state => {
                 if (!state) return;
                 
-                const { track_window, paused, position, duration } = state;
+                const { track_window, paused, position, duration, shuffle, repeat_mode } = state;
                 const { current_track } = track_window;
                 
                 // Update current track info
@@ -105,17 +157,21 @@ class MusicPlayerService {
                     artist: current_track.artists.map(a => a.name).join(', '),
                     album: current_track.album.name,
                     duration: duration / 1000, // Convert ms to seconds
-                    cover: current_track.album.images[0]?.url,
+                    cover: current_track.album.images[0]?.url || 'img/default-cover.png',
                     url: `spotify:track:${current_track.id}`,
                     color: '#1DB954' // Spotify green as fallback
                 };
                 
                 // Update player state
                 this.isPlaying = !paused;
+                this.isShuffled = shuffle;
+                this.repeatMode = ['none', 'all', 'one'][repeat_mode];
                 
                 // Trigger events
                 this.trigger('onTrackChanged', track);
                 this.trigger('onPlayStateChanged', !paused);
+                this.trigger('onShuffleChanged', shuffle);
+                this.trigger('onRepeatChanged', this.repeatMode);
                 this.trigger('onProgressChanged', {
                     currentTime: position / 1000, // Convert ms to seconds
                     duration: duration / 1000,
@@ -128,27 +184,57 @@ class MusicPlayerService {
                 console.log('Spotify Player Ready with Device ID:', device_id);
                 this.deviceId = device_id;
                 this.isSpotifyConnected = true;
-                this.trigger('onSpotifyConnected', true);
+                this.showPlayerReady();
+                this.trigger('onSpotifyConnected', {
+                    connected: true,
+                    deviceId: device_id
+                });
+                
+                // Transfer playback to this device if logged in
+                if (window.spotifyAPI.isLoggedIn()) {
+                    window.spotifyAPI.transferPlayback(device_id)
+                        .then(() => console.log('Playback transferred to this device'))
+                        .catch(err => console.error('Error transferring playback:', err));
+                }
             });
             
             // Not Ready
             this.spotifyPlayer.addListener('not_ready', ({ device_id }) => {
                 console.log('Spotify Player Device ID has gone offline:', device_id);
                 this.isSpotifyConnected = false;
-                this.trigger('onSpotifyConnected', false);
+                this.trigger('onSpotifyConnected', {
+                    connected: false,
+                    deviceId: null
+                });
             });
             
             // Connect to the player
-            this.spotifyPlayer.connect();
+            this.spotifyPlayer.connect()
+                .then(success => {
+                    if (!success) {
+                        console.error('Failed to connect to Spotify Player');
+                    }
+                });
         };
-        
-        // Load the Spotify Web Playback SDK if not already loaded
-        if (!document.getElementById('spotify-player-sdk')) {
-            const script = document.createElement('script');
-            script.id = 'spotify-player-sdk';
-            script.src = 'https://sdk.scdn.co/spotify-player.js';
-            document.head.appendChild(script);
+    }
+    
+    // Show player ready notification
+    showPlayerReady() {
+        const notification = document.getElementById('player-ready');
+        if (notification) {
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
         }
+    }
+    
+    // Show authentication error
+    showAuthError(message) {
+        console.error('Spotify authentication error:', message);
+        // Optional: Show a UI notification to the user
+        alert('Spotify authentication error. Please log in again.');
+        window.spotifyAPI.logout();
     }
     
     // Load user's library from Spotify
@@ -164,7 +250,7 @@ class MusicPlayerService {
                     artist: item.track.artists.map(a => a.name).join(', '),
                     album: item.track.album.name,
                     duration: item.track.duration_ms / 1000, // Convert ms to seconds
-                    cover: item.track.album.images[0]?.url,
+                    cover: item.track.album.images[0]?.url || 'img/default-cover.png',
                     url: `spotify:track:${item.track.id}`,
                     color: '#1DB954' // Spotify green as fallback
                 }));
@@ -190,7 +276,8 @@ class MusicPlayerService {
                 album: 'After Hours',
                 duration: 201, // 3:21
                 cover: 'assets/covers/blinding-lights.jpeg', // placeholder path
-                url: 'assets/music/sample1.mp3', // placeholder path
+                url: 'assets/music/sample1.mp3', // local path
+                fallbackUrl: 'https://samplelib.com/lib/preview/mp3/sample-3s.mp3', // fallback
                 color: '#E13300'
             },
             {
@@ -200,7 +287,8 @@ class MusicPlayerService {
                 album: 'When We All Fall Asleep, Where Do We Go?',
                 duration: 194, // 3:14
                 cover: 'assets/covers/bad-guy.jpeg', // placeholder path
-                url: 'assets/music/sample2.mp3', // placeholder path
+                url: 'assets/music/sample2.mp3', // local path
+                fallbackUrl: 'https://samplelib.com/lib/preview/mp3/sample-6s.mp3', // fallback
                 color: '#00E1DD'
             },
             {
@@ -210,7 +298,8 @@ class MusicPlayerService {
                 album: '÷ (Divide)',
                 duration: 234, // 3:54
                 cover: 'assets/covers/shape-of-you.jpeg', // placeholder path
-                url: 'assets/music/sample3.mp3', // placeholder path
+                url: 'assets/music/sample3.mp3', // local path
+                fallbackUrl: 'https://samplelib.com/lib/preview/mp3/sample-9s.mp3', // fallback
                 color: '#3300E1'
             },
             {
@@ -220,7 +309,8 @@ class MusicPlayerService {
                 album: 'Future Nostalgia',
                 duration: 183, // 3:03
                 cover: 'assets/covers/dont-start-now.jpeg', // placeholder path
-                url: 'assets/music/sample4.mp3', // placeholder path
+                url: 'assets/music/sample4.mp3', // local path
+                fallbackUrl: 'https://samplelib.com/lib/preview/mp3/sample-12s.mp3', // fallback
                 color: '#E100DD'
             },
             {
@@ -230,7 +320,8 @@ class MusicPlayerService {
                 album: 'Uptown Special',
                 duration: 270, // 4:30
                 cover: 'assets/covers/uptown-funk.jpeg', // placeholder path
-                url: 'assets/music/sample5.mp3', // placeholder path
+                url: 'assets/music/sample5.mp3', // local path
+                fallbackUrl: 'https://samplelib.com/lib/preview/mp3/sample-15s.mp3', // fallback
                 color: '#A1E100'
             }
         ];
@@ -342,16 +433,38 @@ class MusicPlayerService {
         }
         
         // Use local audio element as fallback
-        this.audioElement.play()
-            .then(() => {
-                this.isPlaying = true;
-                this.trigger('onPlayStateChanged', true);
-            })
-            .catch(error => {
-                console.error('Error playing audio:', error);
+        try {
+            await this.audioElement.play();
+            this.isPlaying = true;
+            this.trigger('onPlayStateChanged', true);
+        } catch (error) {
+            console.error('Error playing audio:', error);
+            
+            // Try with fallback URL if available
+            const track = this.playlist[this.currentTrackIndex];
+            if (track && track.fallbackUrl) {
+                console.log('Trying fallback URL:', track.fallbackUrl);
+                this.audioElement.src = track.fallbackUrl;
+                this.audioElement.load();
+                
+                try {
+                    await this.audioElement.play();
+                    this.isPlaying = true;
+                    this.trigger('onPlayStateChanged', true);
+                } catch (fallbackError) {
+                    console.error('Error playing fallback audio:', fallbackError);
+                    this.isPlaying = false;
+                    this.trigger('onPlayStateChanged', false);
+                    this.trigger('onError', {
+                        track: track,
+                        error: fallbackError
+                    });
+                }
+            } else {
                 this.isPlaying = false;
                 this.trigger('onPlayStateChanged', false);
-            });
+            }
+        }
     }
     
     async pause() {
@@ -459,10 +572,33 @@ class MusicPlayerService {
     loadCurrentTrack() {
         const track = this.playlist[this.currentTrackIndex];
         if (track) {
-            // For local audio files
+            // Try the primary URL first
             if (track.url && !track.url.startsWith('spotify:')) {
                 this.audioElement.src = track.url;
+                
+                // Add error handler for this specific load
+                const errorHandler = () => {
+                    console.log('Error loading track, trying fallback URL');
+                    
+                    // If primary URL fails, try the fallback
+                    if (track.fallbackUrl) {
+                        this.audioElement.src = track.fallbackUrl;
+                        this.audioElement.load();
+                    }
+                    
+                    // Remove this one-time handler
+                    this.audioElement.removeEventListener('error', errorHandler);
+                };
+                
+                this.audioElement.addEventListener('error', errorHandler, { once: true });
+                this.audioElement.load();
             }
+            // If it's a Spotify URL or no URL is available, but we have a fallback
+            else if (track.fallbackUrl) {
+                this.audioElement.src = track.fallbackUrl;
+                this.audioElement.load();
+            }
+            
             this.trigger('onTrackChanged', track);
         }
     }

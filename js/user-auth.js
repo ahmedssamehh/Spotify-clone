@@ -1,10 +1,12 @@
-// User Authentication Module
-class UserAuth {
+// User Authentication
+class UserAuthService {
     constructor() {
         this.isLoggedIn = false;
         this.userProfile = null;
+        
+        // DOM elements
         this.authButton = document.getElementById('auth-button');
-        this.userInfoElement = document.getElementById('user-info');
+        this.userInfo = document.getElementById('user-info');
         this.userMenuToggle = document.getElementById('user-menu-toggle');
         this.userMenu = document.getElementById('user-menu');
         
@@ -13,26 +15,25 @@ class UserAuth {
     }
     
     async init() {
-        // Check if Spotify API is available
-        if (!window.spotifyAPI) {
-            console.warn('Spotify API not available. Authentication features will be limited.');
-            this.updateUIForLoggedOutState();
-            return;
-        }
-        
-        try {
-            // Try to initialize Spotify API connection
-            await window.spotifyAPI.init();
-            
-            // If initialization succeeded, the user might be logged in
-            if (window.spotifyAPI.isTokenValid()) {
-                await this.fetchUserProfile();
-            } else {
-                this.updateUIForLoggedOutState();
+        // Check if we're already logged in with Spotify
+        if (window.spotifyAPI) {
+            try {
+                await window.spotifyAPI.init();
+                
+                if (window.spotifyAPI.isTokenValid()) {
+                    // We have a valid token, fetch user profile
+                    await this.loadUserProfile();
+                } else {
+                    // Not logged in
+                    this.showLoggedOutState();
+                }
+            } catch (error) {
+                console.warn('Not authenticated with Spotify:', error);
+                this.showLoggedOutState();
             }
-        } catch (error) {
-            console.warn('Authentication required:', error);
-            this.updateUIForLoggedOutState();
+        } else {
+            console.warn('Spotify API not available');
+            this.showLoggedOutState();
         }
         
         // Set up event listeners
@@ -40,7 +41,7 @@ class UserAuth {
     }
     
     setupEventListeners() {
-        // Login/logout button
+        // Auth button click
         if (this.authButton) {
             this.authButton.addEventListener('click', () => {
                 if (this.isLoggedIn) {
@@ -52,36 +53,130 @@ class UserAuth {
         }
         
         // User menu toggle
-        if (this.userMenuToggle && this.userMenu) {
-            this.userMenuToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.userMenu.classList.toggle('visible');
+        if (this.userMenuToggle) {
+            this.userMenuToggle.addEventListener('click', () => {
+                this.toggleUserMenu();
             });
             
-            // Close menu when clicking outside
+            // Close menu when clicking elsewhere
             document.addEventListener('click', (e) => {
-                if (this.userMenu && this.userMenu.classList.contains('visible')) {
-                    if (!this.userMenu.contains(e.target) && e.target !== this.userMenuToggle) {
-                        this.userMenu.classList.remove('visible');
-                    }
+                if (!this.userMenuToggle.contains(e.target) && !this.userMenu.contains(e.target)) {
+                    this.userMenu.classList.remove('active');
                 }
             });
         }
     }
     
-    async login() {
-        if (!window.spotifyAPI) {
-            console.error('Spotify API not available');
-            this.showAlert('Authentication service is not available');
-            return;
+    async loadUserProfile() {
+        try {
+            // Get user profile from Spotify
+            const profile = await window.spotifyAPI.getUserProfile();
+            
+            this.userProfile = profile;
+            this.isLoggedIn = true;
+            
+            // Update UI
+            this.showLoggedInState();
+            
+            return profile;
+        } catch (error) {
+            console.error('Error loading user profile:', error);
+            this.showLoggedOutState();
+            return null;
+        }
+    }
+    
+    showLoggedInState() {
+        this.isLoggedIn = true;
+        
+        // Hide login button, show user info
+        if (this.authButton) {
+            this.authButton.style.display = 'none';
         }
         
-        try {
-            // Redirect to Spotify authentication
+        if (this.userInfo) {
+            this.userInfo.style.display = 'flex';
+            
+            // Create user info content
+            let userImgSrc = 'assets/images/default-profile.png';
+            if (this.userProfile && this.userProfile.images && this.userProfile.images.length > 0) {
+                userImgSrc = this.userProfile.images[0].url;
+            }
+            
+            const userName = this.userProfile ? this.userProfile.display_name : 'User';
+            
+            this.userInfo.innerHTML = `
+                <div class="profile-img-container">
+                    <img src="${userImgSrc}" alt="${userName}" class="profile-img">
+                </div>
+                <span class="user-name">${userName}</span>
+            `;
+        }
+        
+        if (this.userMenuToggle) {
+            this.userMenuToggle.style.display = 'flex';
+        }
+        
+        // Create user menu content
+        if (this.userMenu) {
+            this.userMenu.innerHTML = `
+                <ul>
+                    <li><a href="#">Account</a></li>
+                    <li><a href="#">Profile</a></li>
+                    <li><a href="#">Settings</a></li>
+                    <li class="divider"></li>
+                    <li><a href="#" id="logout-btn">Log out</a></li>
+                </ul>
+            `;
+            
+            // Add logout event listener
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.logout();
+                });
+            }
+        }
+        
+        // Dispatch event
+        window.dispatchEvent(new CustomEvent('user-authenticated', { 
+            detail: { user: this.userProfile }
+        }));
+    }
+    
+    showLoggedOutState() {
+        this.isLoggedIn = false;
+        this.userProfile = null;
+        
+        // Show login button, hide user info
+        if (this.authButton) {
+            this.authButton.style.display = 'block';
+            this.authButton.textContent = 'Log In';
+        }
+        
+        if (this.userInfo) {
+            this.userInfo.style.display = 'none';
+            this.userInfo.innerHTML = '';
+        }
+        
+        if (this.userMenuToggle) {
+            this.userMenuToggle.style.display = 'none';
+        }
+        
+        if (this.userMenu) {
+            this.userMenu.classList.remove('active');
+        }
+        
+        // Dispatch event
+        window.dispatchEvent(new CustomEvent('user-logged-out'));
+    }
+    
+    login() {
+        if (window.spotifyAPI) {
             window.spotifyAPI.authenticate();
-        } catch (error) {
-            console.error('Authentication error:', error);
-            this.showAlert('Authentication failed. Please try again.');
+        } else {
+            alert('Login functionality not available');
         }
     }
     
@@ -90,168 +185,25 @@ class UserAuth {
             window.spotifyAPI.logout();
         }
         
-        this.isLoggedIn = false;
-        this.userProfile = null;
-        this.updateUIForLoggedOutState();
-        
-        // Reload the page to clear any user-specific data
-        // We could do a more sophisticated state clear without reload in a real app
-        window.location.reload();
+        this.showLoggedOutState();
     }
     
-    async fetchUserProfile() {
-        try {
-            const profile = await window.spotifyAPI.getUserProfile();
-            
-            if (profile) {
-                this.userProfile = profile;
-                this.isLoggedIn = true;
-                this.updateUIForLoggedInState();
-            } else {
-                this.updateUIForLoggedOutState();
-            }
-        } catch (error) {
-            console.error('Error fetching user profile:', error);
-            this.updateUIForLoggedOutState();
-        }
-    }
-    
-    updateUIForLoggedInState() {
-        document.body.classList.add('user-logged-in');
-        
-        if (this.authButton) {
-            this.authButton.textContent = 'Log Out';
-            this.authButton.classList.add('logged-in');
-        }
-        
-        if (this.userInfoElement && this.userProfile) {
-            // Display user info
-            const userImage = this.userProfile.images && this.userProfile.images.length > 0
-                ? `<img src="${this.userProfile.images[0].url}" alt="${this.userProfile.display_name}" class="user-avatar">`
-                : `<div class="user-avatar-placeholder"><i class="fas fa-user"></i></div>`;
-                
-            this.userInfoElement.innerHTML = `
-                ${userImage}
-                <span class="user-name">${this.userProfile.display_name}</span>
-            `;
-            this.userInfoElement.style.display = 'flex';
-        }
-        
-        if (this.userMenuToggle) {
-            this.userMenuToggle.style.display = 'block';
-        }
-        
-        // Update user menu if it exists
+    toggleUserMenu() {
         if (this.userMenu) {
-            const premiumStatus = this.userProfile.product === 'premium'
-                ? '<span class="premium-badge">Premium</span>'
-                : '';
-                
-            this.userMenu.innerHTML = `
-                <div class="user-menu-header">
-                    <div class="user-profile">
-                        ${this.userProfile.images && this.userProfile.images.length > 0
-                            ? `<img src="${this.userProfile.images[0].url}" alt="${this.userProfile.display_name}" class="user-avatar">`
-                            : `<div class="user-avatar-placeholder"><i class="fas fa-user"></i></div>`
-                        }
-                        <div class="user-details">
-                            <div class="user-name">${this.userProfile.display_name}</div>
-                            <div class="user-email">${this.userProfile.email || ''}</div>
-                            ${premiumStatus}
-                        </div>
-                    </div>
-                </div>
-                <div class="user-menu-options">
-                    <a href="#" class="menu-option" id="view-profile">
-                        <i class="fas fa-user"></i> View Profile
-                    </a>
-                    <a href="#" class="menu-option" id="account-settings">
-                        <i class="fas fa-cog"></i> Account Settings
-                    </a>
-                    <a href="#" class="menu-option" id="logout">
-                        <i class="fas fa-sign-out-alt"></i> Log Out
-                    </a>
-                </div>
-            `;
-            
-            // Add event listener for menu options
-            const logoutOption = this.userMenu.querySelector('#logout');
-            if (logoutOption) {
-                logoutOption.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.logout();
-                });
-            }
+            this.userMenu.classList.toggle('active');
         }
-        
-        // Dispatch login event
-        this.dispatchAuthEvent('login', this.userProfile);
     }
     
-    updateUIForLoggedOutState() {
-        document.body.classList.remove('user-logged-in');
-        
-        if (this.authButton) {
-            this.authButton.textContent = 'Log In';
-            this.authButton.classList.remove('logged-in');
-        }
-        
-        if (this.userInfoElement) {
-            this.userInfoElement.style.display = 'none';
-        }
-        
-        if (this.userMenuToggle) {
-            this.userMenuToggle.style.display = 'none';
-        }
-        
-        // Clear user menu if it exists
-        if (this.userMenu) {
-            this.userMenu.innerHTML = '';
-        }
-        
-        // Dispatch logout event
-        this.dispatchAuthEvent('logout');
-    }
-    
-    showAlert(message) {
-        // Create alert element
-        const alertElement = document.createElement('div');
-        alertElement.className = 'auth-alert';
-        alertElement.textContent = message;
-        
-        // Add to body
-        document.body.appendChild(alertElement);
-        
-        // Remove after a few seconds
-        setTimeout(() => {
-            alertElement.remove();
-        }, 3000);
-    }
-    
-    dispatchAuthEvent(type, data = null) {
-        const event = new CustomEvent(`auth:${type}`, {
-            detail: { user: data }
-        });
-        document.dispatchEvent(event);
-    }
-    
-    // Check if user is logged in
     isAuthenticated() {
         return this.isLoggedIn;
     }
     
-    // Get user profile
     getUserProfile() {
         return this.userProfile;
     }
-    
-    // Check if user has premium
-    hasPremium() {
-        return this.userProfile && this.userProfile.product === 'premium';
-    }
 }
 
-// Create instance once DOM is loaded
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.userAuth = new UserAuth();
+    window.userAuth = new UserAuthService();
 }); 
