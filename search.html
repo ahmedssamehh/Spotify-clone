@@ -7,83 +7,72 @@
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/search.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
-    <div class="main-container">
+    <div class="container">
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <nav class="main-nav">
-                    <ul>
-                        <li>
-                            <a href="index.html" class="nav-link">
-                                <i class="fas fa-home"></i>
-                                <span>Home</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="search.html" class="nav-link active">
-                                <i class="fas fa-search"></i>
-                                <span>Search</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="library.html" class="nav-link">
-                                <i class="fas fa-book"></i>
-                                <span>Your Library</span>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-
-                <div class="sidebar-playlists">
-                    <div class="create-playlist">
-                        <a href="#" class="create-playlist-btn">
-                            <div class="icon-container">
-                                <i class="fas fa-plus"></i>
-                            </div>
-                            <span>Create Playlist</span>
-                        </a>
-                    </div>
-                    <div class="liked-songs">
-                        <a href="#" class="liked-songs-btn">
-                            <div class="icon-container gradient">
-                                <i class="fas fa-heart"></i>
-                            </div>
-                            <span>Liked Songs</span>
-                        </a>
-                    </div>
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fab fa-spotify"></i>
+                    <span>Spotify</span>
                 </div>
             </div>
-
-            <div class="separator"></div>
-
-            <div class="playlists">
-                <ul class="playlist-list">
-                    <li><a href="#">My Playlist #1</a></li>
-                    <li><a href="#">Discover Weekly</a></li>
-                    <li><a href="#">Release Radar</a></li>
-                    <li><a href="#">Daily Mix 1</a></li>
-                    <li><a href="#">Chill Vibes</a></li>
-                    <li><a href="#">Top Hits 2023</a></li>
-                    <li><a href="#">Workout Motivation</a></li>
-                    <li><a href="#">Throwback Thursday</a></li>
+            <nav class="main-nav">
+                <ul>
+                    <li>
+                        <a href="index.html">
+                            <i class="fas fa-home"></i>
+                            <span>Home</span>
+                        </a>
+                    </li>
+                    <li class="active">
+                        <a href="search.html">
+                            <i class="fas fa-search"></i>
+                            <span>Search</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="library.html">
+                            <i class="fas fa-book"></i>
+                            <span>Your Library</span>
+                        </a>
+                    </li>
                 </ul>
+            </nav>
+            <div class="playlist-nav">
+                <button class="create-playlist-btn">
+                    <div class="icon-container">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <span>Create Playlist</span>
+                </button>
+                <a href="#" class="liked-songs-btn">
+                    <div class="icon-container gradient">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <span>Liked Songs</span>
+                </a>
+                <div class="separator"></div>
+                <div class="playlists">
+                    <ul class="playlist-list">
+                        <!-- Playlists will be added here -->
+                    </ul>
+                </div>
             </div>
-
             <div class="sidebar-footer">
                 <a href="#" class="install-app">
-                    <i class="fas fa-arrow-down"></i>
+                    <i class="fas fa-arrow-circle-down"></i>
                     <span>Install App</span>
                 </a>
             </div>
-        </aside>
+        </div>
 
         <!-- Main content -->
         <main class="content">
-            <header class="top-bar">
-                <div class="navigation-btns">
+            <div class="top-bar">
+                <div class="navigation-buttons">
                     <button class="nav-btn back">
                         <i class="fas fa-chevron-left"></i>
                     </button>
@@ -91,34 +80,35 @@
                         <i class="fas fa-chevron-right"></i>
                     </button>
                 </div>
-
                 <div class="search-container">
-                    <div class="search-input-container">
+                    <div class="search-icon">
                         <i class="fas fa-search"></i>
-                        <input type="text" class="search-input" placeholder="What do you want to listen to?">
-                        <button class="clear-btn">
-                            <i class="fas fa-times"></i>
-                        </button>
+                    </div>
+                    <input type="text" class="search-input" placeholder="What do you want to listen to?">
+                    <button class="search-clear-btn" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="user-controls">
+                    <div id="user-info" style="display: none;">
+                        <!-- User profile info will be added here -->
+                    </div>
+                    <button id="auth-button" class="auth-button">Log In</button>
+                    <button id="user-menu-toggle" class="user-menu-toggle" style="display: none;">
+                        <i class="fas fa-caret-down"></i>
+                    </button>
+                    <div id="user-menu" class="user-menu">
+                        <!-- User menu will be added here -->
                     </div>
                 </div>
+            </div>
 
-                <div class="user-menu">
-                    <button class="upgrade-btn">Upgrade</button>
-                    <div class="profile-menu">
-                        <button class="profile-btn">
-                            <i class="fas fa-user-circle profile-img"></i>
-                            <span>User Name</span>
-                            <i class="fas fa-caret-down"></i>
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            <div class="content-wrapper">
-                <section class="browse-all-section">
-                    <h2>Browse all</h2>
+            <div class="content-container">
+                <!-- Browse Section -->
+                <div class="browse-section">
+                    <h2>Browse All</h2>
                     <div class="browse-grid">
-                        <div class="browse-card" style="background-color: #E61E32">
+                        <div class="browse-card search-category" style="background-color: #E13300">
                             <h3>Podcasts</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -126,15 +116,15 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #1E3264">
-                            <h3>Made For You</h3>
+                        <div class="browse-card search-category" style="background-color: #1E3264">
+                            <h3>Made for You</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
                                     <i class="fas fa-user"></i>
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #8D67AB">
+                        <div class="browse-card search-category" style="background-color: #8D67AB">
                             <h3>Charts</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -142,15 +132,15 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #E8115B">
+                        <div class="browse-card search-category" style="background-color: #E8115B">
                             <h3>New Releases</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
-                                    <i class="fas fa-calendar-plus"></i>
+                                    <i class="fas fa-calendar-alt"></i>
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #148A08">
+                        <div class="browse-card search-category" style="background-color: #1E3264">
                             <h3>Discover</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -158,7 +148,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #BC5900">
+                        <div class="browse-card search-category" style="background-color: #148A08">
                             <h3>Live Events</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -166,7 +156,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #E91429">
+                        <div class="browse-card search-category" style="background-color: #E1118C">
                             <h3>Pop</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -174,7 +164,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #777777">
+                        <div class="browse-card search-category" style="background-color: #B02897">
                             <h3>Hip-Hop</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -182,23 +172,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #E1118C">
-                            <h3>Dance/Electronic</h3>
-                            <div class="browse-img-container">
-                                <div class="placeholder-img">
-                                    <i class="fas fa-music"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="browse-card" style="background-color: #1E3264">
-                            <h3>R&B</h3>
-                            <div class="browse-img-container">
-                                <div class="placeholder-img">
-                                    <i class="fas fa-music"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="browse-card" style="background-color: #509BF5">
+                        <div class="browse-card search-category" style="background-color: #E91429">
                             <h3>Rock</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -206,7 +180,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #0D73EC">
+                        <div class="browse-card search-category" style="background-color: #2D46B9">
                             <h3>Latin</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -214,7 +188,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #BA5D07">
+                        <div class="browse-card search-category" style="background-color: #BA5D07">
                             <h3>Indie</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -222,7 +196,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #7358FF">
+                        <div class="browse-card search-category" style="background-color: #7358FF">
                             <h3>Mood</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -230,7 +204,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #503750">
+                        <div class="browse-card search-category" style="background-color: #503750">
                             <h3>Party</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -238,7 +212,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="browse-card" style="background-color: #E51D32">
+                        <div class="browse-card search-category" style="background-color: #E51D32">
                             <h3>Workout</h3>
                             <div class="browse-img-container">
                                 <div class="placeholder-img">
@@ -247,7 +221,125 @@
                             </div>
                         </div>
                     </div>
-                </section>
+                </div>
+
+                <!-- Results Section -->
+                <div class="results-section" style="display: none;">
+                    <div class="loading-indicator" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Searching...</span>
+                    </div>
+
+                    <div class="results-tabs">
+                        <div class="tab active" data-tab="all">
+                            All
+                            <span class="count">0</span>
+                        </div>
+                        <div class="tab" data-tab="tracks">
+                            Songs
+                            <span class="count">0</span>
+                        </div>
+                        <div class="tab" data-tab="artists">
+                            Artists
+                            <span class="count">0</span>
+                        </div>
+                        <div class="tab" data-tab="albums">
+                            Albums
+                            <span class="count">0</span>
+                        </div>
+                        <div class="tab" data-tab="playlists">
+                            Playlists
+                            <span class="count">0</span>
+                        </div>
+                    </div>
+
+                    <!-- All Results -->
+                    <div id="all-results">
+                        <!-- Top Result -->
+                        <div class="top-result-section">
+                            <h2>Top Result</h2>
+                            <div class="top-result-container">
+                                <!-- Top result will be added here -->
+                            </div>
+                        </div>
+
+                        <!-- Preview Songs -->
+                        <div id="tracks-preview">
+                            <div class="section-header">
+                                <h2>Songs</h2>
+                                <a href="#" class="see-all-btn" data-tab="tracks">See All</a>
+                            </div>
+                            <div class="results-grid preview">
+                                <!-- Tracks will be added here -->
+                            </div>
+                        </div>
+
+                        <!-- Preview Artists -->
+                        <div id="artists-preview">
+                            <div class="section-header">
+                                <h2>Artists</h2>
+                                <a href="#" class="see-all-btn" data-tab="artists">See All</a>
+                            </div>
+                            <div class="results-grid preview">
+                                <!-- Artists will be added here -->
+                            </div>
+                        </div>
+
+                        <!-- Preview Albums -->
+                        <div id="albums-preview">
+                            <div class="section-header">
+                                <h2>Albums</h2>
+                                <a href="#" class="see-all-btn" data-tab="albums">See All</a>
+                            </div>
+                            <div class="results-grid preview">
+                                <!-- Albums will be added here -->
+                            </div>
+                        </div>
+
+                        <!-- Preview Playlists -->
+                        <div id="playlists-preview">
+                            <div class="section-header">
+                                <h2>Playlists</h2>
+                                <a href="#" class="see-all-btn" data-tab="playlists">See All</a>
+                            </div>
+                            <div class="results-grid preview">
+                                <!-- Playlists will be added here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tracks Results -->
+                    <div id="tracks-results" style="display: none;">
+                        <h2>Songs</h2>
+                        <div class="results-grid">
+                            <!-- All tracks will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Artists Results -->
+                    <div id="artists-results" style="display: none;">
+                        <h2>Artists</h2>
+                        <div class="results-grid">
+                            <!-- All artists will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Albums Results -->
+                    <div id="albums-results" style="display: none;">
+                        <h2>Albums</h2>
+                        <div class="results-grid">
+                            <!-- All albums will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Playlists Results -->
+                    <div id="playlists-results" style="display: none;">
+                        <h2>Playlists</h2>
+                        <div class="results-grid">
+                            <!-- All playlists will be added here -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -301,17 +393,11 @@
         </div>
 
         <div class="extra-controls">
-            <button class="control-btn lyrics">
-                <i class="fas fa-microphone"></i>
-            </button>
-            <button class="control-btn queue">
+            <button class="control-btn playlist">
                 <i class="fas fa-list"></i>
             </button>
-            <button class="control-btn connect-device">
-                <i class="fas fa-desktop"></i>
-            </button>
             <div class="volume-control">
-                <button class="volume-btn">
+                <button class="control-btn volume">
                     <i class="fas fa-volume-up"></i>
                 </button>
                 <div class="volume-bar-container">
@@ -321,12 +407,47 @@
                     </div>
                 </div>
             </div>
-            <button class="control-btn fullscreen">
-                <i class="fas fa-expand"></i>
-            </button>
         </div>
     </div>
 
+    <!-- Create/Edit Playlist Modal -->
+    <div id="playlist-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="playlist-modal-title">Create Playlist</h2>
+                <button id="close-modal" class="close-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="playlist-form">
+                    <div class="form-group">
+                        <label for="playlist-name">Playlist Name</label>
+                        <input type="text" id="playlist-name" placeholder="New Playlist" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="playlist-description">Description (optional)</label>
+                        <textarea id="playlist-description" placeholder="Add an optional description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="playlist-public" checked>
+                            Make public
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/spotify-api.js"></script>
+    <script src="js/music-player.js"></script>
+    <script src="js/user-auth.js"></script>
+    <script src="js/playlist-manager.js"></script>
     <script src="js/app.js"></script>
     <script src="js/search.js"></script>
 </body>
