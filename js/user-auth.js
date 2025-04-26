@@ -4,6 +4,9 @@ class UserAuthService {
         this.isLoggedIn = false;
         this.userProfile = null;
         
+        // Initialize global flag for tracking explicit logout requests
+        window.userRequestedLogout = false;
+        
         // DOM elements
         this.authButton = document.getElementById('auth-button');
         this.userInfo = document.getElementById('user-info');
@@ -134,7 +137,9 @@ class UserAuthService {
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    this.logout();
+                    // Set flag to indicate that the user explicitly requested logout
+                    window.userRequestedLogout = true;
+                    this.logout(true);
                 });
             }
         }
@@ -180,7 +185,17 @@ class UserAuthService {
         }
     }
     
-    logout() {
+    logout(forceLogout = false) {
+        // Only proceed with logout if it's explicitly requested by the user 
+        // or if the forceLogout parameter is true
+        if (!forceLogout && !window.userRequestedLogout) {
+            console.warn('Logout attempted but was prevented because it was not explicitly requested by the user');
+            return;
+        }
+        
+        // Reset the user requested flag
+        window.userRequestedLogout = false;
+        
         if (window.spotifyAPI) {
             window.spotifyAPI.logout();
         }

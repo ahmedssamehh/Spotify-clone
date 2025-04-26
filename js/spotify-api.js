@@ -182,6 +182,16 @@ class SpotifyAPI {
             try {
                 await this.refreshToken();
             } catch (error) {
+                console.warn('Authentication required but token refresh failed:', error);
+                
+                // For demo mode, don't force authentication and continue with mock data
+                if (this.isDemoMode()) {
+                    console.log('Demo mode - continuing with mock data');
+                    return this.getMockData(endpoint);
+                }
+                
+                // In non-demo mode, we should notify about authentication but not force it
+                // This prevents unexpected logouts when making API calls
                 throw new Error('Authentication required');
             }
         }
@@ -210,16 +220,30 @@ class SpotifyAPI {
             if (!response.ok) {
                 if (response.status === 401) {
                     // Token expired, attempt refresh
-                    await this.refreshToken();
-                    // Retry the request with the new token
-                    return this.request(endpoint, method, body);
+                    console.log('Token expired, attempting refresh');
+                    try {
+                        await this.refreshToken();
+                        // Retry the request with the new token
+                        return this.request(endpoint, method, body);
+                    } catch (refreshError) {
+                        console.error('Token refresh failed:', refreshError);
+                        // For demo mode, return mock data instead of throwing an error
+                        if (this.isDemoMode()) {
+                            console.log('Using mock data after token refresh failure');
+                            return this.getMockData(endpoint);
+                        }
+                        // In non-demo mode, we should notify about authentication but not force logout
+                        throw new Error(`Authentication error: ${refreshError.message}`);
+                    }
                 }
                 
                 // For demo mode, return mock data instead of throwing an error
                 if (this.isDemoMode()) {
+                    console.log('API request failed, using mock data');
                     return this.getMockData(endpoint);
                 }
                 
+                // For non-demo mode with errors other than 401
                 throw new Error(`API request failed: ${response.statusText}`);
             }
 
@@ -234,9 +258,18 @@ class SpotifyAPI {
             
             // For demo purposes, return mock data
             if (this.isDemoMode()) {
+                console.log('API request error, using mock data');
                 return this.getMockData(endpoint);
             }
             
+            // Don't throw the error directly if it's an authentication issue
+            // This prevents unexpected logouts
+            if (error.message.includes('Authentication') || error.message.includes('auth')) {
+                console.warn('Authentication issue with request, continuing with limited functionality');
+                return null;
+            }
+            
+            // For other errors, we can throw them
             throw error;
         }
     }

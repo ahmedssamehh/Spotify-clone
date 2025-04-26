@@ -104,17 +104,53 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Like button
         if (likeBtn) {
-            likeBtn.addEventListener('click', function() {
+            likeBtn.addEventListener('click', function(e) {
+                // Prevent default behavior and event bubbling
+                e.preventDefault();
+                e.stopPropagation();
+                
                 const icon = likeBtn.querySelector('i');
+                const currentTrack = player.getCurrentTrack();
+                
+                // Toggle the like state
                 if (icon.classList.contains('far')) {
+                    // Like the track
                     icon.classList.remove('far');
                     icon.classList.add('fas');
                     icon.style.color = '#1db954';
+                    
+                    // If we're connected to Spotify, actually save the track
+                    if (window.spotifyAPI && window.spotifyAPI.isLoggedIn() && currentTrack && currentTrack.id) {
+                        try {
+                            // Call saveTracks but don't await it - fire and forget
+                            // This prevents any auth issues from affecting the UI
+                            window.spotifyAPI.saveTracks([currentTrack.id])
+                                .catch(err => console.error('Error saving track:', err));
+                        } catch (error) {
+                            console.error('Failed to save track:', error);
+                        }
+                    }
                 } else {
+                    // Unlike the track
                     icon.classList.remove('fas');
                     icon.classList.add('far');
                     icon.style.color = '';
+                    
+                    // If we're connected to Spotify, actually unsave the track
+                    if (window.spotifyAPI && window.spotifyAPI.isLoggedIn() && currentTrack && currentTrack.id) {
+                        try {
+                            // Call removeSavedTracks but don't await it - fire and forget
+                            // This prevents any auth issues from affecting the UI
+                            window.spotifyAPI.removeSavedTracks([currentTrack.id])
+                                .catch(err => console.error('Error removing saved track:', err));
+                        } catch (error) {
+                            console.error('Failed to remove saved track:', error);
+                        }
+                    }
                 }
+                
+                // Return false to prevent any default actions
+                return false;
             });
         }
         
@@ -171,6 +207,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update total time display
                 if (totalTimeDisplay) {
                     totalTimeDisplay.textContent = MusicPlayerService.formatTime(track.duration);
+                }
+                
+                // Update like button state based on track information
+                if (likeBtn && window.spotifyAPI && window.spotifyAPI.isLoggedIn() && track.id) {
+                    const icon = likeBtn.querySelector('i');
+                    
+                    // Check if the track is already saved
+                    window.spotifyAPI.checkSavedTracks([track.id])
+                        .then(result => {
+                            const isLiked = result && result[0];
+                            if (isLiked) {
+                                icon.classList.remove('far');
+                                icon.classList.add('fas');
+                                icon.style.color = '#1db954';
+                            } else {
+                                icon.classList.remove('fas');
+                                icon.classList.add('far');
+                                icon.style.color = '';
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error checking if track is saved:', err);
+                            // Default to not liked if there's an error
+                            icon.classList.remove('fas');
+                            icon.classList.add('far');
+                            icon.style.color = '';
+                        });
                 }
             }
         });
